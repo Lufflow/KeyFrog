@@ -1,0 +1,44 @@
+<svg width="1280" height="760" viewBox="0 0 1280 760" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1280" height="760" fill="#0b1117"/>
+  <rect x="0" y="0" width="240" height="760" fill="#111820"/>
+  <rect x="240" y="0" width="1" height="760" fill="#263443"/>
+  <circle cx="39" cy="69" r="18" fill="#16877d"/>
+  <circle cx="31" cy="62" r="5" fill="#dffcf4"/>
+  <circle cx="47" cy="62" r="5" fill="#dffcf4"/>
+  <rect x="17" y="123" width="202" height="40" rx="6" fill="#16877d"/>
+  <text x="72" y="65" fill="#f7fafc" font-family="Inter, Arial" font-size="16" font-weight="700">KeyFrog</text>
+  <text x="72" y="86" fill="#a8bdd3" font-family="Inter, Arial" font-size="13">Локальное хранилище</text>
+  <text x="58" y="148" fill="#ffffff" font-family="Inter, Arial" font-size="14" font-weight="700">Хранилище</text>
+  <text x="58" y="193" fill="#a8bdd3" font-family="Inter, Arial" font-size="14" font-weight="700">Генератор</text>
+  <text x="58" y="238" fill="#a8bdd3" font-family="Inter, Arial" font-size="14" font-weight="700">Настройки</text>
+  <text x="264" y="75" fill="#f7fafc" font-family="Inter, Arial" font-size="28" font-weight="700">Хранилище</text>
+  <text x="264" y="102" fill="#b7d1ee" font-family="Inter, Arial" font-size="14">2 записи</text>
+  <rect x="974" y="61" width="126" height="40" rx="6" fill="#111820" stroke="#304153"/>
+  <text x="1017" y="86" fill="#f7fafc" font-family="Inter, Arial" font-size="14" font-weight="700">Обновить</text>
+  <rect x="1109" y="61" width="123" height="40" rx="6" fill="#16877d"/>
+  <text x="1150" y="86" fill="#ffffff" font-family="Inter, Arial" font-size="14" font-weight="700">Добавить</text>
+  <rect x="264" y="128" width="968" height="42" rx="6" fill="#111820" stroke="#304153"/>
+  <text x="315" y="154" fill="#8097ad" font-family="Inter, Arial" font-size="14">Поиск сервиса или логина</text>
+  <rect x="264" y="186" width="858" height="228" rx="6" fill="#111820" stroke="#304153"/>
+  <text x="282" y="212" fill="#a8d0f6" font-family="Inter, Arial" font-size="12" font-weight="700">СЕРВИС</text>
+  <text x="282" y="237" fill="#ffffff" font-family="Inter, Arial" font-size="15" font-weight="700">Site</text>
+  <rect x="958" y="204" width="36" height="36" rx="6" fill="#16877d"/>
+  <rect x="1002" y="204" width="36" height="36" rx="6" fill="#be123c"/>
+  <text x="282" y="267" fill="#a8d0f6" font-family="Inter, Arial" font-size="12" font-weight="700">ЛОГИН</text>
+  <rect x="282" y="275" width="743" height="45" rx="6" fill="#1a242e" stroke="#304153"/>
+  <text x="295" y="303" fill="#b7d1ee" font-family="Inter, Arial" font-size="14">login1</text>
+  <text x="282" y="345" fill="#a8d0f6" font-family="Inter, Arial" font-size="12" font-weight="700">ПАРОЛЬ</text>
+  <rect x="282" y="353" width="743" height="45" rx="6" fill="#1a242e" stroke="#304153"/>
+  <text x="295" y="381" fill="#ffffff" font-family="Consolas, monospace" font-size="15">************</text>
+  <rect x="264" y="424" width="858" height="228" rx="6" fill="#111820" stroke="#304153"/>
+  <text x="282" y="453" fill="#a8d0f6" font-family="Inter, Arial" font-size="12" font-weight="700">СЕРВИС</text>
+  <text x="282" y="478" fill="#ffffff" font-family="Inter, Arial" font-size="15" font-weight="700">Something</text>
+  <rect x="958" y="442" width="36" height="36" rx="6" fill="#16877d"/>
+  <rect x="1002" y="442" width="36" height="36" rx="6" fill="#be123c"/>
+  <text x="282" y="508" fill="#a8d0f6" font-family="Inter, Arial" font-size="12" font-weight="700">ЛОГИН</text>
+  <rect x="282" y="516" width="743" height="45" rx="6" fill="#1a242e" stroke="#304153"/>
+  <text x="295" y="544" fill="#b7d1ee" font-family="Inter, Arial" font-size="14">login</text>
+  <text x="282" y="586" fill="#a8d0f6" font-family="Inter, Arial" font-size="12" font-weight="700">ПАРОЛЬ</text>
+  <rect x="282" y="594" width="743" height="45" rx="6" fill="#1a242e" stroke="#304153"/>
+  <text x="295" y="622" fill="#ffffff" font-family="Consolas, monospace" font-size="15">************</text>
+</svg>

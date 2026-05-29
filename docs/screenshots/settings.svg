@@ -1,0 +1,38 @@
+<svg width="1280" height="760" viewBox="0 0 1280 760" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1280" height="760" fill="#0b1117"/>
+  <rect x="0" y="0" width="240" height="760" fill="#111820"/>
+  <rect x="240" y="0" width="1" height="760" fill="#263443"/>
+  <rect x="17" y="213" width="202" height="40" rx="6" fill="#16877d"/>
+  <circle cx="39" cy="69" r="18" fill="#16877d"/>
+  <text x="72" y="65" fill="#f7fafc" font-family="Inter, Arial" font-size="16" font-weight="700">KeyFrog</text>
+  <text x="72" y="86" fill="#a8bdd3" font-family="Inter, Arial" font-size="13">Локальное хранилище</text>
+  <text x="58" y="148" fill="#a8bdd3" font-family="Inter, Arial" font-size="14" font-weight="700">Хранилище</text>
+  <text x="58" y="193" fill="#a8bdd3" font-family="Inter, Arial" font-size="14" font-weight="700">Генератор</text>
+  <text x="58" y="238" fill="#ffffff" font-family="Inter, Arial" font-size="14" font-weight="700">Настройки</text>
+  <text x="264" y="75" fill="#f7fafc" font-family="Inter, Arial" font-size="28" font-weight="700">Настройки</text>
+  <text x="264" y="102" fill="#b7d1ee" font-family="Inter, Arial" font-size="14">Локальные настройки приложения.</text>
+  <rect x="264" y="128" width="620" height="162" rx="6" fill="#111820" stroke="#304153"/>
+  <text x="288" y="164" fill="#ffffff" font-family="Inter, Arial" font-size="18" font-weight="700">Интерфейс</text>
+  <text x="288" y="198" fill="#ffffff" font-family="Inter, Arial" font-size="14" font-weight="700">Язык</text>
+  <rect x="288" y="210" width="260" height="40" rx="6" fill="#111820" stroke="#304153"/>
+  <text x="304" y="235" fill="#ffffff" font-family="Inter, Arial" font-size="14" font-weight="700">Русский</text>
+  <text x="586" y="198" fill="#ffffff" font-family="Inter, Arial" font-size="14" font-weight="700">Тема</text>
+  <rect x="586" y="210" width="260" height="40" rx="6" fill="#111820" stroke="#304153"/>
+  <rect x="718" y="214" width="124" height="32" rx="4" fill="#16877d"/>
+  <text x="755" y="235" fill="#ffffff" font-family="Inter, Arial" font-size="14" font-weight="700">Темная</text>
+  <rect x="264" y="314" width="620" height="210" rx="6" fill="#111820" stroke="#304153"/>
+  <text x="288" y="350" fill="#ffffff" font-family="Inter, Arial" font-size="18" font-weight="700">Сессия</text>
+  <text x="288" y="386" fill="#ffffff" font-family="Inter, Arial" font-size="14" font-weight="700">Автоблокировка, минуты</text>
+  <rect x="288" y="398" width="260" height="40" rx="6" fill="#111820" stroke="#304153"/>
+  <text x="304" y="423" fill="#ffffff" font-family="Inter, Arial" font-size="14">10</text>
+  <text x="586" y="386" fill="#ffffff" font-family="Inter, Arial" font-size="14" font-weight="700">Очистка буфера, секунды</text>
+  <rect x="586" y="398" width="260" height="40" rx="6" fill="#111820" stroke="#304153"/>
+  <text x="602" y="423" fill="#ffffff" font-family="Inter, Arial" font-size="14">30</text>
+  <rect x="288" y="462" width="90" height="40" rx="6" fill="#16877d"/>
+  <text x="324" y="487" fill="#ffffff" font-family="Inter, Arial" font-size="14" font-weight="700">Сохранить</text>
+  <rect x="264" y="548" width="620" height="150" rx="6" fill="#111820" stroke="#be123c"/>
+  <text x="288" y="584" fill="#fb7185" font-family="Inter, Arial" font-size="18" font-weight="700">Сброс vault-а</text>
+  <text x="288" y="620" fill="#b7d1ee" font-family="Inter, Arial" font-size="14">Удаляет все сохраненные данные и возвращает приложение к первичной настройке.</text>
+  <rect x="288" y="646" width="130" height="40" rx="6" fill="#be123c"/>
+  <text x="326" y="671" fill="#ffffff" font-family="Inter, Arial" font-size="14" font-weight="700">Удалить vault</text>
+</svg>
