@@ -1,0 +1,28 @@
+[package]
+name = "local-password-manager"
+version = "0.1.0"
+description = "A local desktop password manager"
+authors = ["KeyFrog"]
+edition = "2021"
+build = "build.rs"
+
+[lib]
+name = "local_password_manager_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+argon2 = "0.5"
+chacha20poly1305 = { version = "0.10", features = ["std"] }
+chrono = { version = "0.4", features = ["clock", "serde"] }
+rand_core = { version = "0.6", features = ["getrandom"] }
+rusqlite = { version = "0.37", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2", features = [] }
+tauri-plugin-process = "2"
+thiserror = "2"
+uuid = { version = "1", features = ["serde", "v4"] }
+zeroize = "1"
