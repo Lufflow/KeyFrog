@@ -8,15 +8,15 @@ KeyFrog - локальный менеджер паролей для ПК. При
 
 ### Хранилище
 
-![Хранилище KeyFrog](docs/screenshots/vault.svg)
+![Хранилище KeyFrog](docs/screenshots/vault.jpg)
 
 ### Генератор паролей
 
-![Генератор паролей KeyFrog](docs/screenshots/generator.svg)
+![Генератор паролей KeyFrog](docs/screenshots/generator.jpg)
 
 ### Настройки
 
-![Настройки KeyFrog](docs/screenshots/settings.svg)
+![Настройки KeyFrog](docs/screenshots/settings.jpg)
 
 ## Возможности
 
