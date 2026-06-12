@@ -78,3 +78,66 @@ pub fn decrypt(key: &[u8; KEY_LEN], blob: &EncryptedBlob) -> AppResult<Vec<u8>> 
 pub fn zeroize_key(key: &mut [u8; KEY_LEN]) {
     key.zeroize();
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn derive_key_is_deterministic_for_same_inputs() {
+        let salt = [7_u8; SALT_LEN];
+
+        let first = derive_key("correct horse battery", &salt).expect("first derive must work");
+        let second = derive_key("correct horse battery", &salt).expect("second derive must work");
+
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn derive_key_changes_when_salt_changes() {
+        let first =
+            derive_key("correct horse battery", &[1_u8; SALT_LEN]).expect("first derive must work");
+        let second = derive_key("correct horse battery", &[2_u8; SALT_LEN])
+            .expect("second derive must work");
+
+        assert_ne!(first, second);
+    }
+
+    #[test]
+    fn encrypt_and_decrypt_round_trip() {
+        let key = [3_u8; KEY_LEN];
+        let plaintext = b"very secret payload";
+
+        let encrypted = encrypt(&key, plaintext).expect("encryption must succeed");
+        let decrypted = decrypt(&key, &encrypted).expect("decryption must succeed");
+
+        assert_eq!(decrypted, plaintext);
+    }
+
+    #[test]
+    fn decrypt_with_wrong_key_fails() {
+        let correct_key = [4_u8; KEY_LEN];
+        let wrong_key = [5_u8; KEY_LEN];
+        let encrypted =
+            encrypt(&correct_key, b"very secret payload").expect("encryption must succeed");
+
+        let error = decrypt(&wrong_key, &encrypted).expect_err("wrong key must fail");
+
+        assert!(matches!(error, AppError::InvalidMasterPassword));
+    }
+
+    #[test]
+    fn decrypt_rejects_invalid_nonce_length() {
+        let key = [6_u8; KEY_LEN];
+        let error = decrypt(
+            &key,
+            &EncryptedBlob {
+                nonce: vec![0_u8; NONCE_LEN - 1],
+                ciphertext: vec![1, 2, 3],
+            },
+        )
+        .expect_err("invalid nonce length must fail");
+
+        assert!(matches!(error, AppError::Crypto(_)));
+    }
+}

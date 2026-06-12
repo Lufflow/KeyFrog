@@ -133,10 +133,10 @@ export function VaultView() {
           </div>
         </div>
 
-        <div className="mb-4 flex items-center gap-2 rounded-md border border-app-border bg-app-panel px-3">
+        <div className="mb-4 flex items-center gap-2 rounded-md border border-app-border bg-app-panel px-3 transition focus-within:border-app-accent focus-within:ring-2 focus-within:ring-app-accent/20">
           <Search size={18} className="text-app-muted" />
           <TextInput
-            className="min-w-0 flex-1 border-0 px-0 focus:border-transparent focus:ring-0"
+            className="min-w-0 flex-1 !border-0 !bg-transparent px-0 focus:!border-transparent focus:!ring-0"
             placeholder={t("searchPlaceholder")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}

@@ -146,6 +146,8 @@ src-tauri/target/debug/bundle/
 
 Подробное описание архитектуры находится в [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+Подробный разбор файлов и логики проекта находится в [docs/CODE_WALKTHROUGH.md](docs/CODE_WALKTHROUGH.md).
+
 Инструкция по ручной публикации релиза находится в [docs/RELEASE.md](docs/RELEASE.md).
 
 История изменений находится в [CHANGELOG.md](CHANGELOG.md).

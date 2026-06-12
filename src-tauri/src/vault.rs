@@ -1,4 +1,8 @@
-use std::{fs, path::PathBuf, sync::Mutex};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    sync::Mutex,
+};
 
 use chrono::Utc;
 use rusqlite::{params, OptionalExtension};
@@ -40,7 +44,7 @@ impl Drop for UnlockedVault {
 #[tauri::command]
 pub fn vault_exists(app: AppHandle) -> Result<bool, String> {
     db::vault_path(&app)
-        .map(|path| path.exists())
+        .map(|path| vault_exists_at_path(&path))
         .map_err(to_command_error)
 }
 
@@ -50,7 +54,9 @@ pub fn initialize_vault(
     state: State<'_, VaultState>,
     master_password: String,
 ) -> Result<(), String> {
-    initialize(app, &state, master_password).map_err(to_command_error)
+    db::vault_path(&app)
+        .and_then(|db_path| initialize_at_path(&state, db_path, master_password))
+        .map_err(to_command_error)
 }
 
 #[tauri::command]
@@ -59,7 +65,9 @@ pub fn unlock_vault(
     state: State<'_, VaultState>,
     master_password: String,
 ) -> Result<(), String> {
-    unlock(app, &state, master_password).map_err(to_command_error)
+    db::vault_path(&app)
+        .and_then(|db_path| unlock_at_path(&state, db_path, master_password))
+        .map_err(to_command_error)
 }
 
 #[tauri::command]
@@ -74,7 +82,9 @@ pub fn lock_vault(state: State<'_, VaultState>) -> Result<(), String> {
 
 #[tauri::command]
 pub fn reset_vault(app: AppHandle, state: State<'_, VaultState>) -> Result<(), String> {
-    reset(app, &state).map_err(to_command_error)
+    db::vault_path(&app)
+        .and_then(|db_path| reset_at_path(&state, &db_path))
+        .map_err(to_command_error)
 }
 
 #[tauri::command]
@@ -101,14 +111,17 @@ pub fn delete_entry(state: State<'_, VaultState>, id: String) -> Result<(), Stri
     delete(&state, id).map_err(to_command_error)
 }
 
-fn initialize(
-    app: AppHandle,
-    state: &State<'_, VaultState>,
+fn vault_exists_at_path(path: &Path) -> bool {
+    path.exists()
+}
+
+fn initialize_at_path(
+    state: &VaultState,
+    db_path: PathBuf,
     master_password: String,
 ) -> AppResult<()> {
     validate_master_password(&master_password)?;
 
-    let db_path = db::vault_path(&app)?;
     if db_path.exists() {
         return Err(AppError::VaultAlreadyExists);
     }
@@ -138,8 +151,7 @@ fn initialize(
     set_unlocked(state, db_path, data_key)
 }
 
-fn unlock(app: AppHandle, state: &State<'_, VaultState>, master_password: String) -> AppResult<()> {
-    let db_path = db::vault_path(&app)?;
+fn unlock_at_path(state: &VaultState, db_path: PathBuf, master_password: String) -> AppResult<()> {
     if !db_path.exists() {
         return Err(AppError::VaultNotFound);
     }
@@ -165,7 +177,7 @@ fn unlock(app: AppHandle, state: &State<'_, VaultState>, master_password: String
     set_unlocked(state, db_path, data_key)
 }
 
-fn reset(app: AppHandle, state: &State<'_, VaultState>) -> AppResult<()> {
+fn reset_at_path(state: &VaultState, db_path: &Path) -> AppResult<()> {
     {
         let mut guard = state
             .inner
@@ -174,7 +186,6 @@ fn reset(app: AppHandle, state: &State<'_, VaultState>) -> AppResult<()> {
         *guard = None;
     }
 
-    let db_path = db::vault_path(&app)?;
     if db_path.exists() {
         fs::remove_file(db_path)?;
     }
@@ -182,40 +193,45 @@ fn reset(app: AppHandle, state: &State<'_, VaultState>) -> AppResult<()> {
     Ok(())
 }
 
-fn list(state: &State<'_, VaultState>) -> AppResult<Vec<VaultEntry>> {
-    let (db_path, data_key) = unlocked_snapshot(state)?;
+fn list(state: &VaultState) -> AppResult<Vec<VaultEntry>> {
+    let (db_path, mut data_key) = unlocked_snapshot(state)?;
     let connection = db::open_connection(&db_path)?;
 
-    let mut statement = connection.prepare(
-        r#"
-        SELECT id, nonce, ciphertext, created_at, updated_at
-        FROM entries
-        ORDER BY updated_at DESC
-        "#,
-    )?;
+    let result = (|| {
+        let mut statement = connection.prepare(
+            r#"
+            SELECT id, nonce, ciphertext, created_at, updated_at
+            FROM entries
+            ORDER BY updated_at DESC
+            "#,
+        )?;
 
-    let rows = statement.query_map([], |row| {
-        Ok(EncryptedEntryRow {
-            id: row.get(0)?,
-            nonce: row.get(1)?,
-            ciphertext: row.get(2)?,
-            created_at: row.get(3)?,
-            updated_at: row.get(4)?,
-        })
-    })?;
+        let rows = statement.query_map([], |row| {
+            Ok(EncryptedEntryRow {
+                id: row.get(0)?,
+                nonce: row.get(1)?,
+                ciphertext: row.get(2)?,
+                created_at: row.get(3)?,
+                updated_at: row.get(4)?,
+            })
+        })?;
 
-    let mut entries = Vec::new();
-    for row in rows {
-        entries.push(decrypt_entry(row?, &data_key)?);
-    }
+        let mut entries = Vec::new();
+        for row in rows {
+            entries.push(decrypt_entry(row?, &data_key)?);
+        }
 
-    Ok(entries)
+        Ok(entries)
+    })();
+
+    zeroize_key(&mut data_key);
+    result
 }
 
-fn create(state: &State<'_, VaultState>, input: EntryInput) -> AppResult<VaultEntry> {
+fn create(state: &VaultState, input: EntryInput) -> AppResult<VaultEntry> {
     validate_entry_input(&input)?;
 
-    let (db_path, data_key) = unlocked_snapshot(state)?;
+    let (db_path, mut data_key) = unlocked_snapshot(state)?;
     let connection = db::open_connection(&db_path)?;
     let id = Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
@@ -224,69 +240,79 @@ fn create(state: &State<'_, VaultState>, input: EntryInput) -> AppResult<VaultEn
         login: input.login.trim().to_string(),
         password: input.password,
     };
-    let encrypted = encrypt_entry_payload(&data_key, &payload)?;
+    let result = (|| {
+        let encrypted = encrypt_entry_payload(&data_key, &payload)?;
 
-    connection.execute(
-        r#"
-        INSERT INTO entries (id, nonce, ciphertext, created_at, updated_at)
-        VALUES (?1, ?2, ?3, ?4, ?5)
-        "#,
-        params![id, encrypted.nonce, encrypted.ciphertext, now, now],
-    )?;
+        connection.execute(
+            r#"
+            INSERT INTO entries (id, nonce, ciphertext, created_at, updated_at)
+            VALUES (?1, ?2, ?3, ?4, ?5)
+            "#,
+            params![id, encrypted.nonce, encrypted.ciphertext, now, now],
+        )?;
 
-    Ok(VaultEntry {
-        id,
-        service_name: payload.service_name,
-        login: payload.login,
-        password: payload.password,
-        created_at: now.clone(),
-        updated_at: now,
-    })
+        Ok(VaultEntry {
+            id,
+            service_name: payload.service_name,
+            login: payload.login,
+            password: payload.password,
+            created_at: now.clone(),
+            updated_at: now,
+        })
+    })();
+
+    zeroize_key(&mut data_key);
+    result
 }
 
-fn update(state: &State<'_, VaultState>, id: String, input: EntryInput) -> AppResult<VaultEntry> {
+fn update(state: &VaultState, id: String, input: EntryInput) -> AppResult<VaultEntry> {
     validate_entry_input(&input)?;
 
-    let (db_path, data_key) = unlocked_snapshot(state)?;
+    let (db_path, mut data_key) = unlocked_snapshot(state)?;
     let connection = db::open_connection(&db_path)?;
-    let created_at = connection
-        .query_row(
-            "SELECT created_at FROM entries WHERE id = ?1",
-            params![id],
-            |row| row.get::<_, String>(0),
-        )
-        .optional()?
-        .ok_or(AppError::VaultNotFound)?;
+    let result = (|| {
+        let created_at = connection
+            .query_row(
+                "SELECT created_at FROM entries WHERE id = ?1",
+                params![id],
+                |row| row.get::<_, String>(0),
+            )
+            .optional()?
+            .ok_or(AppError::VaultNotFound)?;
 
-    let updated_at = Utc::now().to_rfc3339();
-    let payload = EntrySecret {
-        service_name: input.service_name.trim().to_string(),
-        login: input.login.trim().to_string(),
-        password: input.password,
-    };
-    let encrypted = encrypt_entry_payload(&data_key, &payload)?;
+        let updated_at = Utc::now().to_rfc3339();
+        let payload = EntrySecret {
+            service_name: input.service_name.trim().to_string(),
+            login: input.login.trim().to_string(),
+            password: input.password,
+        };
+        let encrypted = encrypt_entry_payload(&data_key, &payload)?;
 
-    connection.execute(
-        r#"
-        UPDATE entries
-        SET nonce = ?1, ciphertext = ?2, updated_at = ?3
-        WHERE id = ?4
-        "#,
-        params![encrypted.nonce, encrypted.ciphertext, updated_at, id],
-    )?;
+        connection.execute(
+            r#"
+            UPDATE entries
+            SET nonce = ?1, ciphertext = ?2, updated_at = ?3
+            WHERE id = ?4
+            "#,
+            params![encrypted.nonce, encrypted.ciphertext, updated_at, id],
+        )?;
 
-    Ok(VaultEntry {
-        id,
-        service_name: payload.service_name,
-        login: payload.login,
-        password: payload.password,
-        created_at,
-        updated_at,
-    })
+        Ok(VaultEntry {
+            id,
+            service_name: payload.service_name,
+            login: payload.login,
+            password: payload.password,
+            created_at,
+            updated_at,
+        })
+    })();
+
+    zeroize_key(&mut data_key);
+    result
 }
 
-fn delete(state: &State<'_, VaultState>, id: String) -> AppResult<()> {
-    let (db_path, _) = unlocked_snapshot(state)?;
+fn delete(state: &VaultState, id: String) -> AppResult<()> {
+    let db_path = unlocked_db_path(state)?;
     let connection = db::open_connection(&db_path)?;
     let changed = connection.execute("DELETE FROM entries WHERE id = ?1", params![id])?;
 
@@ -329,11 +355,7 @@ fn require_meta(connection: &rusqlite::Connection, key: &str) -> AppResult<Vec<u
     db::get_meta(connection, key)?.ok_or(AppError::VaultNotFound)
 }
 
-fn set_unlocked(
-    state: &State<'_, VaultState>,
-    db_path: PathBuf,
-    data_key: [u8; KEY_LEN],
-) -> AppResult<()> {
+fn set_unlocked(state: &VaultState, db_path: PathBuf, data_key: [u8; KEY_LEN]) -> AppResult<()> {
     let mut guard = state
         .inner
         .lock()
@@ -342,7 +364,16 @@ fn set_unlocked(
     Ok(())
 }
 
-fn unlocked_snapshot(state: &State<'_, VaultState>) -> AppResult<(PathBuf, [u8; KEY_LEN])> {
+fn unlocked_db_path(state: &VaultState) -> AppResult<PathBuf> {
+    let guard = state
+        .inner
+        .lock()
+        .map_err(|_| AppError::Validation("failed to lock vault state".to_string()))?;
+    let vault = guard.as_ref().ok_or(AppError::VaultLocked)?;
+    Ok(vault.db_path.clone())
+}
+
+fn unlocked_snapshot(state: &VaultState) -> AppResult<(PathBuf, [u8; KEY_LEN])> {
     let guard = state
         .inner
         .lock()
@@ -383,4 +414,193 @@ struct EncryptedEntryRow {
     ciphertext: Vec<u8>,
     created_at: String,
     updated_at: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{env, fs, path::PathBuf};
+
+    use super::*;
+
+    struct TestVaultPath {
+        path: PathBuf,
+    }
+
+    impl TestVaultPath {
+        fn new() -> Self {
+            let path = env::temp_dir().join(format!("keyfrog-test-{}.sqlite3", Uuid::new_v4()));
+            if path.exists() {
+                let _ = fs::remove_file(&path);
+            }
+            Self { path }
+        }
+    }
+
+    impl Drop for TestVaultPath {
+        fn drop(&mut self) {
+            let _ = fs::remove_file(&self.path);
+        }
+    }
+
+    fn sample_entry() -> EntryInput {
+        EntryInput {
+            service_name: "  Something  ".to_string(),
+            login: "  login  ".to_string(),
+            password: "super-secret".to_string(),
+        }
+    }
+
+    fn lock_for_test(state: &VaultState) {
+        let mut guard = state.inner.lock().expect("state mutex must lock");
+        *guard = None;
+    }
+
+    fn file_contains_bytes(path: &Path, needle: &[u8]) -> bool {
+        fs::read(path)
+            .expect("database file must be readable")
+            .windows(needle.len())
+            .any(|window| window == needle)
+    }
+
+    #[test]
+    fn initialize_rejects_short_master_password() {
+        let state = VaultState::default();
+        let vault_path = TestVaultPath::new();
+
+        let error = initialize_at_path(&state, vault_path.path.clone(), "short".to_string())
+            .expect_err("short password must be rejected");
+
+        assert!(matches!(error, AppError::Validation(_)));
+        assert!(!vault_exists_at_path(&vault_path.path));
+    }
+
+    #[test]
+    fn vault_lifecycle_round_trip_works() {
+        let state = VaultState::default();
+        let vault_path = TestVaultPath::new();
+        let master_password = "correct horse battery".to_string();
+
+        initialize_at_path(&state, vault_path.path.clone(), master_password.clone())
+            .expect("vault must initialize");
+        assert!(vault_exists_at_path(&vault_path.path));
+
+        let created = create(&state, sample_entry()).expect("entry must be created");
+        assert_eq!(created.service_name, "Something");
+        assert_eq!(created.login, "login");
+        assert_eq!(created.password, "super-secret");
+
+        let listed = list(&state).expect("entries must list");
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].id, created.id);
+
+        let updated = update(
+            &state,
+            created.id.clone(),
+            EntryInput {
+                service_name: "Example".to_string(),
+                login: "new-login".to_string(),
+                password: "changed-secret".to_string(),
+            },
+        )
+        .expect("entry must update");
+        assert_eq!(updated.service_name, "Example");
+        assert_eq!(updated.login, "new-login");
+        assert_eq!(updated.password, "changed-secret");
+
+        let listed_after_update = list(&state).expect("updated entry must list");
+        assert_eq!(listed_after_update.len(), 1);
+        assert_eq!(listed_after_update[0].service_name, "Example");
+        assert_eq!(listed_after_update[0].password, "changed-secret");
+
+        delete(&state, created.id.clone()).expect("entry must delete");
+        assert!(list(&state)
+            .expect("list after delete must succeed")
+            .is_empty());
+
+        reset_at_path(&state, &vault_path.path).expect("vault reset must succeed");
+        assert!(!vault_exists_at_path(&vault_path.path));
+        assert!(matches!(list(&state), Err(AppError::VaultLocked)));
+
+        initialize_at_path(&state, vault_path.path.clone(), master_password.clone())
+            .expect("vault must reinitialize after reset");
+        lock_for_test(&state);
+        unlock_at_path(&state, vault_path.path.clone(), master_password)
+            .expect("vault must unlock after reset");
+        assert!(list(&state)
+            .expect("list after unlock must succeed")
+            .is_empty());
+    }
+
+    #[test]
+    fn unlock_with_wrong_password_fails() {
+        let state = VaultState::default();
+        let vault_path = TestVaultPath::new();
+
+        initialize_at_path(
+            &state,
+            vault_path.path.clone(),
+            "correct horse battery".to_string(),
+        )
+        .expect("vault must initialize");
+        lock_for_test(&state);
+
+        let error = unlock_at_path(
+            &state,
+            vault_path.path.clone(),
+            "wrong password".to_string(),
+        )
+        .expect_err("wrong password must fail");
+
+        assert!(matches!(error, AppError::InvalidMasterPassword));
+    }
+
+    #[test]
+    fn locked_vault_rejects_entry_operations() {
+        let state = VaultState::default();
+        let input = sample_entry();
+
+        assert!(matches!(list(&state), Err(AppError::VaultLocked)));
+        assert!(matches!(
+            create(&state, input.clone()),
+            Err(AppError::VaultLocked)
+        ));
+        assert!(matches!(
+            update(&state, "missing".to_string(), input),
+            Err(AppError::VaultLocked)
+        ));
+        assert!(matches!(
+            delete(&state, "missing".to_string()),
+            Err(AppError::VaultLocked)
+        ));
+    }
+
+    #[test]
+    fn entries_are_encrypted_at_rest() {
+        let state = VaultState::default();
+        let vault_path = TestVaultPath::new();
+        let input = sample_entry();
+
+        initialize_at_path(
+            &state,
+            vault_path.path.clone(),
+            "correct horse battery".to_string(),
+        )
+        .expect("vault must initialize");
+        create(&state, input.clone()).expect("entry must be created");
+
+        let connection = db::open_connection(&vault_path.path).expect("database must open");
+        let ciphertext: Vec<u8> = connection
+            .query_row("SELECT ciphertext FROM entries LIMIT 1", [], |row| {
+                row.get(0)
+            })
+            .expect("ciphertext row must exist");
+        assert!(!ciphertext.is_empty());
+        assert!(!ciphertext
+            .windows(input.password.len())
+            .any(|window| window == input.password.as_bytes()));
+
+        assert!(!file_contains_bytes(&vault_path.path, b"Something"));
+        assert!(!file_contains_bytes(&vault_path.path, b"login"));
+        assert!(!file_contains_bytes(&vault_path.path, b"super-secret"));
+    }
 }
